@@ -1,0 +1,24 @@
+#!/bin/bash
+#This is a test showing invalid file operation
+#We profile using gcov to check that our tests are complete
+ln -sf incompleteSymbolicLink noSuchFile
+ln -sf circularLink circularLink  #link points to itself
+touch cantReadThis
+chmod a= cantReadThis
+gcc -ftest-coverage -fprofile-arcs -pg eCode.c -o eCode
+eCode eCode.c r      #Try to read the source file.  Should work.
+eCode eCode.c        #Assumed 2nd argument - should work
+eCode eCode.c xp     #Error - invalid mode
+eCode eCode wb       #Error: Can't write to an executable that's running
+eCode  .    w        #Can't write to a directory
+eCode eCode.x        #Error - file doesn't exist
+echo TESTING NO SUCH DIR
+eCode noSuchDir/eCode.c r #Error - dir doesn't exist
+eCode /dev/tty w     #Should work
+echo TESTING ADBMOUSE
+eCode /dev/adbmouse  r #Error - No such device
+eCode incompleteSymbolicLink #Error - link points nowhere
+eCode circularLink   #Error - symbolic link loops back on itself
+eCode                #Error - not enough arguments  
+eCode cantReadThis r #Error - not allowed to read file
+gcov -b eCode        #Generate the gcov listing

@@ -1,0 +1,158 @@
+        -:    0:Source:octaldump.c
+        -:    0:Graph:octaldump.gcno
+        -:    0:Data:octaldump.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    1:
+        -:    2:/*
+        -:    3:   File: octalDump.c
+        -:    4:   Course: CENG411
+        -:    5:   Author: Leon King,J230,x4200
+        -:    6:   Date: Sunday Feb 22, 2015   10:25 AM
+        -:    7:*/
+        -:    8: 
+        -:    9:#include <stdio.h>
+        -:   10:#include <getopt.h>
+        -:   11:#include <stdbool.h>
+        -:   12:#include <errno.h>
+        -:   13:#include <stdlib.h>
+        -:   14:#include <ctype.h>
+        -:   15:#include <string.h>
+        -:   16:
+        -:   17:struct FLAGS 
+        -:   18:   {
+        -:   19:      bool hex;
+        -:   20:      bool octal;
+        -:   21:      bool decimal;
+        -:   22:      bool character;
+        -:   23:      int  skipBytes;
+        -:   24:      char *radixFormat;
+        -:   25:     };
+        -:   26:
+        -:   27:
+        -:   28:void do_Octal(FILE * fp,struct FLAGS myFlags)
+    #####:   29:{
+        -:   30:  char buffer[16];
+    #####:   31:  int currentOffset=myFlags.skipBytes;
+        -:   32:  int nChars;
+        -:   33:  int i;
+        -:   34:  
+        -:   35:  //Skip bytes - the slow way
+        -:   36:  
+        -:   37: // for(int counter=myFlags.skipBytes;counter;counter--)fgetc(fp);
+    #####:   38:  fprintf(stdout,"Verifying position in file: %ld\n",ftell(fp));
+        -:   39:
+        -:   40:  //Skip bytes - the fast way
+    #####:   41:  fseek(fp,myFlags.skipBytes,SEEK_SET);
+        -:   42:
+    #####:   43:  fprintf(stdout,"Verifying position in file again: %ld\n",ftell(fp));
+        -:   44:
+    #####:   45:  while(nChars=fread(buffer,1,sizeof buffer,fp))
+        -:   46:  {
+    #####:   47:    fprintf(stdout,myFlags.radixFormat,currentOffset);
+        -:   48:    
+    #####:   49:    if(myFlags.hex){
+    #####:   50:       for(i<nChars; i++;)
+    #####:   51:             fprintf(stdout," %02x ",buffer[i]);
+    #####:   52:       fprintf(stdout,"\n        ");  //newline + next indent
+        -:   53:       }
+        -:   54:
+    #####:   55:    if(myFlags.octal) {
+    #####:   56:       for(i<nChars; i++;) 
+    #####:   57:	   fprintf(stdout," %03o",buffer[i]);
+    #####:   58:       fprintf(stdout,"\n        ");  //newline + next indent
+        -:   59:       }
+        -:   60:
+    #####:   61:    if(myFlags.decimal) {
+    #####:   62:       for(i<nChars; i++;) 
+    #####:   63:	   fprintf(stdout," %03u",buffer[i]);
+    #####:   64:       fprintf(stdout,"\n        ");  //newline + next indent
+        -:   65:    }
+        -:   66:
+        -:   67:    //Print out as characters with substitutions for
+        -:   68:    //unprintable characters.  Code taken from mallocDemo.c 
+    #####:   69:    if(myFlags.character){ 
+    #####:   70:	for(i<nChars;i++;)
+        -:   71:	{
+    #####:   72:	    if(isprint(buffer[i])) fprintf(stdout,"%4c",buffer[i]);
+    #####:   73:	    else if(buffer[i]=='\0')   fprintf(stdout,"  \\0");
+    #####:   74:	    else if(buffer[i]=='\n')   fprintf(stdout,"  \\n");
+    #####:   75:	    else fprintf(stdout," . ");
+        -:   76:	}
+        -:   77:
+    #####:   78:	fprintf(stdout,"\n"); //Final newline
+        -:   79:    }
+    #####:   80:    currentOffset+=sizeof buffer;
+    #####:   81:    fprintf(stdout,"\n");
+        -:   82:  } //end of while loop
+    #####:   83:}
+        -:   84:int main(int argc, char * argv[],char * envp[])
+        1:   85:{
+        1:   86:    char * shortOpts="ocdxj:A:";
+        1:   87:    struct FLAGS myFlags = {false,false,false,false,0,"%06o   "} ;
+        -:   88:    FILE * infile;
+        -:   89:    int  index;
+        -:   90:    int  flag;
+        -:   91:
+        -:   92:    //Process the options
+        2:   93:    while((flag=getopt(argc,argv,shortOpts))!=-1)
+        -:   94:    {
+    #####:   95:	switch(flag)
+        -:   96:	{
+        -:   97:	    case 'o':
+    #####:   98:		myFlags.octal=true;
+    #####:   99:		break;
+        -:  100:            case 'd':
+    #####:  101:                myFlags.decimal=true;
+        -:  102:	    case 'x':
+    #####:  103:		myFlags.hex=true;
+    #####:  104:		break;
+        -:  105:	    case 'c':
+    #####:  106:		myFlags.character=true;
+    #####:  107:		break;
+        -:  108:	    case 'j':
+    #####:  109:		myFlags.skipBytes=atoi(optarg);
+        -:  110:            case 'A':
+    #####:  111:                if(strcmp(optarg,"o")==0) myFlags.radixFormat="%06o   ";
+    #####:  112:                if(strcmp(optarg,"d")==0) myFlags.radixFormat="%06d   ";
+    #####:  113:                if(strcmp(optarg,"x")==0) myFlags.radixFormat="%06x   ";
+        -:  114:		break;
+        -:  115:
+        -:  116:	}
+        -:  117:    }
+        -:  118:
+        -:  119:    //Make sure that if no options are set, hex is the default
+        1:  120:    if(!myFlags.octal && !myFlags.hex && !myFlags.character)
+        1:  121:	myFlags.hex=true;
+        -:  122:
+        -:  123:    //Verifiying the setting of the flags
+        1:  124:    fprintf(stdout,"Hex flag setting: %c\n",
+        -:  125:	    myFlags.hex ? 'T' : 'F');
+        1:  126:    fprintf(stdout,"Character flag setting: %c\n",
+        -:  127:	    myFlags.character ? 'T' : 'F');
+        1:  128:    fprintf(stdout,"Octal flag setting: %c\n",
+        -:  129:	    myFlags.octal ? 'T' : 'F') ;
+        1:  130:    fprintf(stdout,"Decimal flag setting: %c\n",
+        -:  131:	    myFlags.decimal ? 'T' : 'F') ;
+        -:  132:
+        1:  133:    fprintf(stdout,"Skip bytes setting: %d\n",myFlags.skipBytes);
+        1:  134:    fprintf(stdout,"Radix format: %s\n",myFlags.radixFormat);
+        -:  135:
+        -:  136:
+        2:  137:    while(optind<argc)
+        -:  138:    {
+    #####:  139:	infile=fopen(argv[optind],"r");
+    #####:  140:	if(infile) {
+    #####:  141:	    do_Octal(infile,myFlags);
+    #####:  142:	    fclose(infile);
+        -:  143:	}
+        -:  144:	else {
+    #####:  145:	    fprintf(stderr,"Error code: %d ",errno);
+    #####:  146:	    perror("Oops ");
+        -:  147:	}
+    #####:  148:	optind++;
+        -:  149:
+        -:  150:
+        -:  151:    }
+        1:  152:    return 0;
+        -:  153:}
